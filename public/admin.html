@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ダメージ残りカウンター管理画面</title>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      padding: 30px;
+    }
+
+    h1 { color: #ff3333; }
+
+    .box {
+      background: #1c1c1c;
+      border: 2px solid #ff3333;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 620px;
+      margin-bottom: 20px;
+    }
+
+    .label {
+      font-size: 26px;
+      font-weight: bold;
+      color: #ff5555;
+    }
+
+    .remaining-number {
+      font-size: 64px;
+      font-weight: bold;
+      margin: 10px 0 25px;
+    }
+
+    h2 {
+      margin-top: 25px;
+      color: #ff7777;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 12px 18px;
+      margin: 6px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+
+    .plus { background: #ff3333; }
+    .minus { background: #3333ff; }
+    .set { background: #ff3333; }
+    .copy { background: #00aa66; }
+    .reset { background: #555; }
+
+    input {
+      font-size: 18px;
+      padding: 10px;
+      width: 330px;
+      margin: 6px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    .url-output {
+      background: #000;
+      border: 1px solid #555;
+      padding: 12px;
+      border-radius: 8px;
+      word-break: break-all;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>ダメージ残りカウンター管理画面</h1>
+
+  <div class="box">
+    <div class="label">ダメージ残り</div>
+    <div id="remainingDamage" class="remaining-number">100,000</div>
+
+    <h2>残りダメージを増やす</h2>
+    <button class="plus" onclick="changeDamage(100)">+100</button>
+    <button class="plus" onclick="changeDamage(500)">+500</button>
+    <button class="plus" onclick="changeDamage(1000)">+1000</button>
+    <button class="plus" onclick="changeDamage(5000)">+5000</button>
+    <button class="plus" onclick="changeDamage(10000)">+10000</button>
+
+    <h2>残りダメージを減らす</h2>
+    <button class="minus" onclick="changeDamage(-100)">-100</button>
+    <button class="minus" onclick="changeDamage(-500)">-500</button>
+    <button class="minus" onclick="changeDamage(-1000)">-1000</button>
+    <button class="minus" onclick="changeDamage(-5000)">-5000</button>
+    <button class="minus" onclick="changeDamage(-10000)">-10000</button>
+
+    <h2>手入力で変更</h2>
+    <input id="customDamage" type="number" placeholder="例：350" />
+    <button class="plus" onclick="addCustomDamage()">＋入力分</button>
+    <button class="minus" onclick="minusCustomDamage()">－入力分</button>
+
+    <h2>数字を直接設定</h2>
+    <input id="setDamageInput" type="number" placeholder="例：100000" />
+    <button class="set" onclick="setDamage()">設定</button>
+
+    <h2>リセット</h2>
+    <button class="reset" onclick="resetCounter()">100,000に戻す</button>
+  </div>
+
+  <div class="box">
+  <h2>配信用URLコピー</h2>
+
+  <button class="copy" onclick="startNgrok()">ngrokを起動</button>
+  <button class="copy" onclick="getNgrokUrl()">配信用URLを取得</button>
+
+  <div id="overlayUrl" class="url-output">
+    ここに配信用URLが出ます
+  </div>
+
+  <button class="copy" onclick="copyOverlayUrl()">配信用URLをコピー</button>
+</div>
+    <p>ngrokのForwarding URLをここに貼ってね。</p>
+
+    <input id="ngrokUrl" type="text" placeholder="例：https://xxxxx.ngrok-free.dev" />
+    <button class="copy" onclick="makeOverlayUrl()">URL作成</button>
+
+    <div id="overlayUrl" class="url-output">
+      ここに配信用URLが出ます
+    </div>
+
+    <button class="copy" onclick="copyOverlayUrl()">配信用URLをコピー</button>
+  </div>
+
+  <script>
+    const socket = io();
+    let createdOverlayUrl = "";
+
+    socket.on("updateCounter", (data) => {
+      document.getElementById("remainingDamage").textContent =
+        Number(data.remainingDamage).toLocaleString();
+    });
+
+    function changeDamage(amount) {
+      socket.emit("changeDamage", amount);
+    }
+
+    function addCustomDamage() {
+      const value = document.getElementById("customDamage").value;
+      if (!value) return;
+      socket.emit("changeDamage", Number(value));
+      document.getElementById("customDamage").value = "";
+    }
+
+    function minusCustomDamage() {
+      const value = document.getElementById("customDamage").value;
+      if (!value) return;
+      socket.emit("changeDamage", -Number(value));
+      document.getElementById("customDamage").value = "";
+    }
+
+    function setDamage() {
+      const value = document.getElementById("setDamageInput").value;
+      if (!value) return;
+      socket.emit("setDamage", Number(value));
+      document.getElementById("setDamageInput").value = "";
+    }
+
+    function resetCounter() {
+      socket.emit("resetCounter");
+    }
+
+    function makeOverlayUrl() {
+      let url = document.getElementById("ngrokUrl").value.trim();
+
+      if (!url) return;
+
+      url = url.replace(/\/$/, "");
+      createdOverlayUrl = url + "/overlay.html";
+
+      document.getElementById("overlayUrl").textContent = createdOverlayUrl;
+    }
+
+    function copyOverlayUrl() {
+      if (!createdOverlayUrl) return;
+
+      navigator.clipboard.writeText(createdOverlayUrl);
+      alert("配信用URLをコピーしました！");
+    }
+    async function startNgrok() {
+  await fetch("/start-ngrok");
+  alert("ngrokを起動しました。5秒くらい待ってから「配信用URLを取得」を押してね。");
+}
+
+async function getNgrokUrl() {
+  const response = await fetch("/ngrok-url");
+  const data = await response.json();
+
+  if (!data.url) {
+    alert("まだURLが取得できません。少し待ってもう一回押してね。");
+    return;
+  }
+
+  createdOverlayUrl = data.url;
+  document.getElementById("overlayUrl").textContent = createdOverlayUrl;
+}
+  </script>
+</body>
+</html>

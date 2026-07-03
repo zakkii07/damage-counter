@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ダメージ残りカウンター</title>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    .counter-wrap {
+      width: 720px;
+      height: 160px;
+      background: linear-gradient(135deg, rgba(15,15,15,0.95), rgba(80,0,0,0.9));
+      border: 3px solid #ff3333;
+      border-radius: 18px;
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 35px;
+      box-sizing: border-box;
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ffffff;
+      letter-spacing: 4px;
+      text-shadow: 0 0 10px #ff0000;
+    }
+
+    .damage {
+      font-size: 72px;
+      font-weight: bold;
+      color: #ff4444;
+      text-shadow: 0 0 15px #ff0000;
+      line-height: 1;
+    }
+
+    .unit {
+      font-size: 28px;
+      color: #ffffff;
+      margin-left: 8px;
+    }
+
+    .damage-box {
+      display: flex;
+      align-items: flex-end;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="counter-wrap">
+    <div class="title">ダメージ残り</div>
+
+    <div class="damage-box">
+      <div id="remainingDamage" class="damage">100,000</div>
+      <div class="unit">DMG</div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    socket.on("updateCounter", (data) => {
+      document.getElementById("remainingDamage").textContent =
+        Number(data.remainingDamage).toLocaleString();
+    });
+  </script>
+</body>
+</html>
