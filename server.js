@@ -62,6 +62,8 @@ app.get("/ngrok-url", async (req, res) => {
   }
 });
 
-server.listen(3000, () => {
-  console.log("サーバー起動：http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log(`サーバー起動：http://localhost:${PORT}`);
 });
